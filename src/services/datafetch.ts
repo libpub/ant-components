@@ -6,7 +6,8 @@ import type {
   ColumnItems,
   GeneralQueryResult,
   ListQueryResult,
-} from './typing';
+} from '../AutoTable/typing';
+import type { BuiltinPageSchemaType } from '../BuiltinPage/typing';
 
 type AntPaginationParams = {
   current?: number;
@@ -18,10 +19,10 @@ type AntListResult = {
   total?: number;
   success?: boolean;
 };
-type AntGeneralResult = {
+type AntGeneralResult<T = any> = {
   success?: boolean;
   message?: string;
-  data?: any;
+  data?: T;
 };
 
 const fetchData = async (
@@ -91,7 +92,7 @@ const fetchData = async (
   return result;
 };
 
-const doUrlQuery = async (
+const doUrlQuery = async <T = any>(
   url: string,
   method: string | undefined,
   record: ColumnItems,
@@ -113,9 +114,9 @@ const doUrlQuery = async (
     }
   }
 
-  let resp: GeneralQueryResult;
+  let resp: GeneralQueryResult<T>;
   try {
-    resp = await request<GeneralQueryResult>(url, {
+    resp = await request<GeneralQueryResult<T>>(url, {
       method: httpMethod,
       headers: {
         'Content-Type': 'application/json',
@@ -131,13 +132,14 @@ const doUrlQuery = async (
       message: String(e),
     };
   }
-  const result: AntGeneralResult = {
+  const result: AntGeneralResult<T> = {
     success: false,
   };
   if (resp) {
     result.message = resp.message;
     if (resp.code === 0 || (resp.code === undefined && resp.success)) {
       result.success = true;
+      result.data = resp.data;
       return resp;
     } else {
       message.error(resp.message);
@@ -149,4 +151,55 @@ const doUrlQuery = async (
   return result;
 };
 
-export { fetchData, doUrlQuery };
+const fetchSchemaData = async (
+  url: string | BuiltinPageSchemaType,
+  method?: string,
+) => {
+  const result: AntGeneralResult<BuiltinPageSchemaType> = {
+    success: false,
+  };
+  if (!url) {
+    return result;
+  }
+  if (typeof url === 'object') {
+    result.success = true;
+    result.data = url;
+    return result;
+  }
+  const httpMethod = method ? method.toUpperCase() : 'GET';
+  const params: Record<string, any> | undefined = {};
+  let resp: GeneralQueryResult<BuiltinPageSchemaType>;
+  try {
+    resp = await request<GeneralQueryResult<BuiltinPageSchemaType>>(url, {
+      method: httpMethod,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      params:
+        httpMethod === 'POST' || httpMethod === 'PUT' ? undefined : params,
+      data: httpMethod === 'POST' || httpMethod === 'PUT' ? params : undefined,
+    });
+  } catch (e) {
+    console.error(`query ${url} failed with error`, e);
+    resp = {
+      code: 500,
+      message: String(e),
+    };
+  }
+  if (resp) {
+    result.message = resp.message;
+    if (resp.code === 0 || (resp.code === undefined && resp.success)) {
+      result.success = true;
+      result.data = resp.data;
+      return resp;
+    } else {
+      message.error(resp.message);
+    }
+  } else {
+    result.message = `Query ${url} got empty response!`;
+    message.error(result.message);
+  }
+  return result;
+};
+
+export { fetchData, doUrlQuery, fetchSchemaData };

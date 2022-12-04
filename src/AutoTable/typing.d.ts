@@ -1,7 +1,9 @@
 import type {
   ActionType,
   FormItemProps,
+  IntlType,
   ProColumnsValueType,
+  ProFormInstance,
   ProFormLayoutType,
 } from '@ant-design/pro-components';
 import type { ProFieldEmptyText } from '@ant-design/pro-field';
@@ -197,7 +199,7 @@ export type ListQueryResult = {
   pagesize?: number;
 };
 
-export type GeneralQueryResult = {
+export type GeneralQueryResult<T = any> = {
   /** result code, success if 0, fails if others */
   code?: number;
   /** true if query result is success, only one of code or success were returned, parameter code have more higher priority */
@@ -205,10 +207,10 @@ export type GeneralQueryResult = {
   /** result human readable message */
   message?: string;
   /** result data */
-  data?: any;
+  data?: T;
 };
 
-export type AutoTableActionType = ActionType & {
+export type AutoTableActionType = {
   /** open new table record form */
   startNewForm: (recordKey?: React.Key) => boolean;
   cancelNewForm: (
@@ -228,4 +230,17 @@ export type AutoTableEditFormStateType = {
   recordKey?: React.Key;
   saveURL?: string;
   httpMethod?: string;
+};
+
+export type AutoTableToolbarParamsOptionsType = {
+  rowKey: string;
+  actionRef: React.MutableRefObject<ActionType | undefined>;
+  autoTableActions: AutoTableActionType;
+  antIntl: IntlType;
+  componentsIntl: IntlType;
+  setEditFormVisible: (value: React.SetStateAction<boolean>) => void;
+  setEditFormState: (
+    value: React.SetStateAction<AutoTableEditFormStateType>,
+  ) => void;
+  formRef: React.MutableRefObject<ProFormInstance<ColumnItems> | undefined>;
 };

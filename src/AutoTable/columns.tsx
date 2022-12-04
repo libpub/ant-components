@@ -1,4 +1,5 @@
 import {
+  ActionType,
   ProColumns,
   ProFieldValueEnumType,
   ProSchemaValueEnumType,
@@ -10,7 +11,7 @@ import { message, Popconfirm, Space, Tag } from 'antd';
 import moment from 'moment';
 import React from 'react';
 import { useComponentsIntl as componentsUseIntl } from '../locales';
-import { doUrlQuery } from './datafetch';
+import { doUrlQuery } from '../services/datafetch';
 import type {
   AutoTableActionType,
   AutoTableDescriptor,
@@ -189,9 +190,11 @@ export const columnBuiltinOperationAction = async (
   dom: React.ReactNode,
   record: ColumnItems,
   index: number,
-  action: AutoTableActionType | undefined,
+  action: ActionType | undefined,
   props?: AutoTableDescriptor,
+  autoTableActions?: AutoTableActionType,
 ) => {
+  const componentsIntl = componentsUseIntl();
   console.debug(
     `click rowIndex:${index} record:${record[rowKey]} operation:${operationAction} with record:`,
     record,
@@ -203,17 +206,24 @@ export const columnBuiltinOperationAction = async (
       action?.startEditable?.(record[rowKey]);
       break;
     case 'add':
-      action?.startNewForm?.(record[rowKey]);
+      autoTableActions?.startNewForm?.(record[rowKey]);
       break;
     case 'update':
-      action?.startEditForm?.(record[rowKey], record);
+      autoTableActions?.startEditForm?.(record[rowKey], record);
       break;
     case 'view':
       break;
     case 'delete':
       {
         if (!props?.deleteURL) {
-          message.error('deleteURL were not configured!');
+          message.error(
+            componentsIntl
+              .getMessage(
+                'prompts.propertyWereNotConfigured',
+                '${property} were not configured!',
+              )
+              .replace('${property}', 'deleteURL'),
+          );
           return false;
         }
         const result = await doUrlQuery(
@@ -237,13 +247,16 @@ const columnMenuItemOperation = async (
   dom: React.ReactNode,
   record: ColumnItems,
   index: number,
-  action: AutoTableActionType | undefined,
+  action: ActionType | undefined,
+  autoTableActions?: AutoTableActionType,
 ) => {
   console.debug(
     `click rowIndex:${index} record:${record[rowKey]} menu key:${key} with record:`,
     record,
     'and nodeAction:',
     action,
+    'custom Actions:',
+    autoTableActions,
   );
   switch (key) {
   }
@@ -253,6 +266,7 @@ const formatColumnOperationsButtons = (
   column: ColumnItems,
   operations: OperationColumnType[],
   props?: AutoTableDescriptor,
+  autoTableActions?: AutoTableActionType,
 ) => {
   if (!operations) {
     return;
@@ -264,7 +278,7 @@ const formatColumnOperationsButtons = (
     dom: React.ReactNode,
     record: ColumnItems,
     index: number,
-    action: AutoTableActionType | undefined,
+    action: ActionType | undefined,
   ) => {
     const buttons: React.ReactNode[] = [];
     operations.forEach((operation, index) => {
@@ -296,6 +310,7 @@ const formatColumnOperationsButtons = (
                   index,
                   action,
                   props,
+                  autoTableActions,
                 );
               }}
             >
@@ -315,6 +330,7 @@ const formatColumnOperationsButtons = (
                   index,
                   action,
                   props,
+                  autoTableActions,
                 );
               }}
             >
@@ -355,6 +371,7 @@ const formatColumnOperationsButtons = (
                 record,
                 index,
                 action,
+                autoTableActions,
               )
             }
             menus={dropDownProps.menus}
@@ -369,6 +386,7 @@ const formatColumnOperationsButtons = (
 const formatColumn = (
   element: ColumnDescriptor,
   props?: AutoTableDescriptor,
+  autoTableActions?: AutoTableActionType,
 ) => {
   const column: ColumnItems = {
     dataIndex: element.name,
@@ -405,7 +423,12 @@ const formatColumn = (
     formatColumnTagsRender(column, element.tagOptions);
   }
   if (element.opearations) {
-    formatColumnOperationsButtons(column, element.opearations, props);
+    formatColumnOperationsButtons(
+      column,
+      element.opearations,
+      props,
+      autoTableActions,
+    );
   }
   return column;
 };
@@ -413,19 +436,23 @@ const formatColumn = (
 export const formatColumns = (
   columns?: ColumnDescriptor[],
   props?: AutoTableDescriptor,
+  autoTableActions?: AutoTableActionType,
 ) => {
+  const componentsIntl = componentsUseIntl();
   const tableColumns: ProColumns<ColumnItems>[] = [];
   if (!columns) {
     tableColumns.push({
       dataIndex: 'key',
-      title: 'Empty Columns!',
+      title:
+        componentsIntl.getMessage('prompts.emptyColumns', 'Empty Columns') +
+        '!',
     });
     return tableColumns;
   }
   let hasOperationColumn = false;
   // iterate each column descriptor element
   columns.forEach((element) => {
-    tableColumns.push(formatColumn(element, props));
+    tableColumns.push(formatColumn(element, props, autoTableActions));
     if (element.valueType === 'option') {
       hasOperationColumn = true;
     }
@@ -440,7 +467,7 @@ export const formatColumns = (
     tableColumns.push(
       formatColumn(
         {
-          label: '操作',
+          label: componentsIntl.getMessage('basic.operation', 'Operation'),
           name: 'option',
           valueType: 'option',
           hideInSearch: true,
@@ -448,6 +475,7 @@ export const formatColumns = (
           opearations: operations,
         },
         props,
+        autoTableActions,
       ),
     );
   }

@@ -98,7 +98,7 @@ export default () => {
         pageSize: 5,
       }}
       // dateFormatter="string"
-      title="高级表格"
+      title="内置CRUD表格"
     />
   );
 };

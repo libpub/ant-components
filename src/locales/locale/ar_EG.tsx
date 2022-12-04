@@ -4,4 +4,8 @@ export default {
     edit: 'Edit',
     view: 'View',
   },
+  prompts: {
+    builtInPageDoesNotHaveProperty:
+      '${component} builtin page does not have ${property} property',
+  },
 };
