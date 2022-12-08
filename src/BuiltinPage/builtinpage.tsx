@@ -1,14 +1,23 @@
 import { Alert, Skeleton } from 'antd';
+import { useAppData } from 'dumi';
 import React, { useEffect, useState } from 'react';
+import { useLocation } from 'umi';
 
 import { AutoTable } from '../AutoTable';
 import { AutoTableDescriptor } from '../AutoTable/typing';
 import { useComponentsIntl } from '../locales';
 import { fetchSchemaData } from '../services/datafetch';
-import type { BuiltinPagePropsType, PageType, SchemaType } from './typing';
+import ServiceUtils from '../utils/serviceutils';
+import type {
+  BuiltinPagePropsType,
+  BuiltinPageSchemaType,
+  PageType,
+  SchemaType,
+} from './typing';
 
 const BuiltinPage = (props: BuiltinPagePropsType) => {
   const { schemaURL } = props;
+  // const { initialState, setInitialState } = useModel('@@initialState');
   const [isLoading, setLoading] = useState<boolean>(true);
   const [builtinPageType, setBuiltinPageType] = useState<PageType>('none');
   const [builtinPageSchema, setBuiltinPageSchema] = useState<SchemaType>({});
@@ -16,13 +25,33 @@ const BuiltinPage = (props: BuiltinPagePropsType) => {
     useState<AutoTableDescriptor>({});
   // const [builtinPageKey, setBuiltinPageKey] = useState('');
   const componentsIntl = useComponentsIntl();
+  const appData = useAppData();
+  const location = useLocation();
 
   useEffect(() => {
-    if (schemaURL) {
+    let fetchSchemaURL: string | BuiltinPageSchemaType | undefined = schemaURL;
+    let fetchSchemaParams: Record<string, any> | undefined = undefined;
+    if (!schemaURL) {
+      console.debug('current dva app:', appData);
+      // if no schemaURL configured, try load schema descriptor using default address on same host with website
+      fetchSchemaURL =
+        ServiceUtils.instance().getBaseURI() + '/api/pages/descriptors';
+      console.debug(
+        `fetching schema data from ${fetchSchemaURL} by '${location.pathname}'`,
+      );
+      fetchSchemaParams = {
+        pathname: location.pathname,
+      };
+    }
+    if (fetchSchemaURL) {
       setLoading(true);
       (async function () {
         console.debug(' -----------------------> ', props);
-        const schemaResult = await fetchSchemaData(schemaURL);
+        const schemaResult = await fetchSchemaData(
+          fetchSchemaURL,
+          'GET',
+          fetchSchemaParams,
+        );
         if (schemaResult && schemaResult.success && schemaResult.data) {
           const data = schemaResult.data;
           setBuiltinPageType(data.pageType);
@@ -35,6 +64,13 @@ const BuiltinPage = (props: BuiltinPagePropsType) => {
               // setBuiltinPageKey(data.pageType + '-' + Math.random().toString(36).slice(-8));
             }
           }
+        } else if (
+          schemaResult &&
+          !schemaResult.success &&
+          location.pathname === '/components/builtinpage'
+        ) {
+          setBuiltinPageType('autotable');
+          setBuiltinPageSchema({});
         }
         setLoading(false);
       })();

@@ -24,4 +24,13 @@ Powered by kevinyjn@gmail.com`,
   publicPath: process.env.NODE_ENV === 'development' ? '/' : './',
   // locales: [{id: 'zh-CN', name: '中文'}, {id: 'zh-US', name: 'English'}],
   autoAlias: true,
+  plugins: [
+    // [
+    //   'umi-plugin-react',
+    //   {
+    //     dva: true,
+    //     antd: true,
+    //   },
+    // ],
+  ],
 });

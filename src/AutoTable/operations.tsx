@@ -209,6 +209,29 @@ export const extendAutoTableActions = (
       autoTableOptions.setEditFormVisible(false);
       return true;
     },
+    startViewModal: async (recordKey: React.Key, record: ColumnItems) => {
+      autoTableOptions.setViewModalVisible(true);
+      autoTableOptions.setViewModalItemData(record);
+      if (props.viewURL) {
+        const result = await doUrlQuery(
+          props.viewURL,
+          props.viewURLMethod,
+          record,
+          autoTableOptions.rowKey,
+        );
+        if (result && result.success) {
+          autoTableOptions.setViewModalItemData(result.data);
+        }
+      }
+      return true;
+    },
+    cancelViewModal: (recordKey: React.Key) => {
+      if (false) {
+        console.debug(`view model close by row key:${recordKey}`);
+      }
+      autoTableOptions.setViewModalVisible(false);
+      return true;
+    },
   };
 };
 

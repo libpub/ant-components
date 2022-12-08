@@ -46,8 +46,11 @@
   "dependencies": {
     "@ant-design/icons": "^4.8.0",
     "@ant-design/pro-components": "^2.3.35",
+    "@umijs/max": "^4.0.34",
+    "@umijs/plugin-model": "^2.6.2",
     "antd": "^5.0.2",
     "moment": "^2.29.4",
+    "umi": "^4.0.34",
     "umi-request": "^1.4.0"
   },
   "devDependencies": {

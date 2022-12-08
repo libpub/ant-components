@@ -154,6 +154,7 @@ const doUrlQuery = async <T = any>(
 const fetchSchemaData = async (
   url: string | BuiltinPageSchemaType,
   method?: string,
+  params?: Record<string, any>,
 ) => {
   const result: AntGeneralResult<BuiltinPageSchemaType> = {
     success: false,
@@ -167,7 +168,6 @@ const fetchSchemaData = async (
     return result;
   }
   const httpMethod = method ? method.toUpperCase() : 'GET';
-  const params: Record<string, any> | undefined = {};
   let resp: GeneralQueryResult<BuiltinPageSchemaType>;
   try {
     resp = await request<GeneralQueryResult<BuiltinPageSchemaType>>(url, {
@@ -193,7 +193,12 @@ const fetchSchemaData = async (
       result.data = resp.data;
       return resp;
     } else {
-      message.error(resp.message);
+      console.error(`Query ${url} response`, resp);
+      if (resp.message) {
+        message.error(resp.message);
+      } else if (resp instanceof String) {
+        // todo
+      }
     }
   } else {
     result.message = `Query ${url} got empty response!`;

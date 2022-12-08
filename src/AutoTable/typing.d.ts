@@ -106,13 +106,16 @@ export type ColumnDescriptor = {
 
   /** 在查询表单中隐藏 */
   search?: boolean;
-  /** @name 在 table 中隐藏 */
+  /** @name 在 Table 中不展示此列 */
   hideInTable?: boolean;
-  /** @name 在 table的查询表单 中隐藏 */
+  /** @name 在查询表单中不展示此项 */
   hideInSearch?: boolean;
+  /** @name 在 Form 中不展示此列 */
   hideInForm?: boolean;
   /** @name 不在配置工具中显示 */
   hideInSetting?: boolean;
+  /** @name 在 Descriptions 中不展示此列 */
+  hideInDescriptions?: boolean;
   /** @name 表头的筛选菜单项 */
   filters?: boolean; // | ColumnFilterItem[];
   // /** @name 筛选的函数，设置为 false 会关闭自带的本地筛选 */
@@ -223,6 +226,11 @@ export type AutoTableActionType = {
     needReTry?: boolean | undefined,
   ) => Promise<true | undefined>;
   // saveEditable: (recordKey: RecordKey, needReTry?: boolean | undefined) => Promise<boolean>;
+  startViewModal: (
+    recordKey: React.Key,
+    record: ColumnItems,
+  ) => Promise<boolean | undefined>;
+  cancelViewModal: (recordKey: React.Key) => boolean;
 };
 
 export type AutoTableEditFormStateType = {
@@ -230,6 +238,11 @@ export type AutoTableEditFormStateType = {
   recordKey?: React.Key;
   saveURL?: string;
   httpMethod?: string;
+};
+
+export type IntlInstancesType = {
+  antIntl: IntlType;
+  componentsIntl: IntlType;
 };
 
 export type AutoTableToolbarParamsOptionsType = {
@@ -242,5 +255,7 @@ export type AutoTableToolbarParamsOptionsType = {
   setEditFormState: (
     value: React.SetStateAction<AutoTableEditFormStateType>,
   ) => void;
+  setViewModalVisible: (value: React.SetStateAction<boolean>) => void;
+  setViewModalItemData: (value: React.SetStateAction<ColumnItems>) => void;
   formRef: React.MutableRefObject<ProFormInstance<ColumnItems> | undefined>;
 };

@@ -13,3 +13,7 @@ title: BuiltinPage
 ### 异步加载 Schema 表格
 
 <code src="./demos/asyncschema.tsx" background="#f5f5f5" height="610px" description="异步加载 Schema 表格示例通过配置schemaURL 异步加载table的descriptor，自动生成新增、查询、编辑、删除按钮及响应的操作">异步加载 Schema 表格</code>
+
+### 根据当前路由的 pathname 加载页面 Schema 生成内置页面
+
+<code src="./demos/loadbypathname.tsx" background="#f5f5f5" height="610px" description="根据当前路由的 pathname 加载页面 Schema 生成内置页面">内置异步获取 pathname Schema</code>

@@ -92,6 +92,7 @@ const schema: BuiltinPageSchemaType = {
         valueType: 'dateRange',
         hideInTable: true,
         hideInForm: true,
+        hideInDescriptions: true,
         // search: {
         //   transform: (value) => {
         //     return {

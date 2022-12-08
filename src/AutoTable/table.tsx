@@ -1,11 +1,13 @@
 import {
   ActionType,
   BetaSchemaForm,
+  ProDescriptions,
+  ProDescriptionsItemProps,
   ProFormInstance,
   ProTable,
 } from '@ant-design/pro-components';
 import { useIntl as antUseIntl } from '@ant-design/pro-provider';
-import { message } from 'antd';
+import { message, Modal } from 'antd';
 import React, { useRef, useState } from 'react';
 
 import { useComponentsIntl } from '../locales';
@@ -18,6 +20,7 @@ import type {
   AutoTableEditFormStateType,
   AutoTableToolbarParamsOptionsType,
   ColumnItems,
+  IntlInstancesType,
 } from './typing';
 
 const AutoTable = (props: AutoTableDescriptor) => {
@@ -25,9 +28,14 @@ const AutoTable = (props: AutoTableDescriptor) => {
   const formRef = useRef<ProFormInstance<ColumnItems>>();
   const { title } = props;
   const [editFormVisible, setEditFormVisible] = useState(false);
+  const [viewModalVisible, setViewModalVisible] = useState(false);
+  const [viewModalItemData, setViewModalItemData] = useState<ColumnItems>({});
   const [editFormState, setEditFormState] =
     useState<AutoTableEditFormStateType>({ editMode: undefined });
 
+  const rowKey = props.rowKey ? props.rowKey : 'id';
+  const antIntl = antUseIntl();
+  const componentsIntl = useComponentsIntl();
   const extendActions: AutoTableActionType = {
     startNewForm: (recordKey?: React.Key) => {
       console.debug(' => startNewForm', recordKey);
@@ -78,11 +86,36 @@ const AutoTable = (props: AutoTableDescriptor) => {
       setEditFormVisible(false);
       return true;
     },
+    startViewModal: async (recordKey: React.Key, record: ColumnItems) => {
+      setViewModalVisible(true);
+      setViewModalItemData(record);
+      if (props.viewURL) {
+        const result = await doUrlQuery(
+          props.viewURL,
+          props.viewURLMethod,
+          record,
+          rowKey,
+        );
+        if (
+          result &&
+          result.success &&
+          result.data &&
+          result.data instanceof Map
+        ) {
+          setViewModalItemData(result.data);
+        }
+      }
+      return true;
+    },
+    cancelViewModal: (recordKey: React.Key) => {
+      if (false) {
+        console.debug(`view model close by row key:${recordKey}`);
+      }
+      setViewModalVisible(false);
+      return true;
+    },
   };
 
-  const rowKey = props.rowKey ? props.rowKey : 'id';
-  const antIntl = antUseIntl();
-  const componentsIntl = useComponentsIntl();
   const autoTableOptions: AutoTableToolbarParamsOptionsType = {
     rowKey,
     actionRef,
@@ -92,8 +125,19 @@ const AutoTable = (props: AutoTableDescriptor) => {
     componentsIntl,
     setEditFormVisible,
     setEditFormState,
+    setViewModalVisible,
+    setViewModalItemData,
   };
-  const columns = formatColumns(props.columns, props, extendActions);
+  const intlInstances: IntlInstancesType = {
+    antIntl,
+    componentsIntl,
+  };
+  const columns = formatColumns(
+    props.columns,
+    props,
+    extendActions,
+    intlInstances,
+  );
 
   return (
     <>
@@ -217,6 +261,22 @@ const AutoTable = (props: AutoTableDescriptor) => {
           (props.saveFormMode === 'StepsForm' ? [columns] : columns) as any
         }
       />
+      <Modal
+        visible={viewModalVisible}
+        onCancel={() => {
+          setViewModalVisible(false);
+        }}
+        onOk={() => {
+          setViewModalVisible(false);
+        }}
+      >
+        <ProDescriptions
+          title={componentsIntl.getMessage('basic.view', 'View') + title}
+          // bordered={true}
+          dataSource={viewModalItemData}
+          columns={columns as ProDescriptionsItemProps<ColumnItems>[]}
+        ></ProDescriptions>
+      </Modal>
     </>
   );
 };

@@ -1,16 +1,15 @@
 import {
   ActionType,
   ProColumns,
+  ProDescriptionsItemProps,
   ProFieldValueEnumType,
   ProSchemaValueEnumType,
   TableDropdown,
 } from '@ant-design/pro-components';
-import { useIntl as antUseIntl } from '@ant-design/pro-provider';
 import { DropdownProps } from '@ant-design/pro-table/es/components/Dropdown';
 import { message, Popconfirm, Space, Tag } from 'antd';
 import moment from 'moment';
 import React from 'react';
-import { useComponentsIntl as componentsUseIntl } from '../locales';
 import { doUrlQuery } from '../services/datafetch';
 import type {
   AutoTableActionType,
@@ -18,6 +17,7 @@ import type {
   ColumnBuiltinOperationTypes,
   ColumnDescriptor,
   ColumnItems,
+  IntlInstancesType,
   OperationColumnType,
   TagsOptionsType,
   ValueEnumType,
@@ -51,14 +51,14 @@ const formatColumnValueType = (
       column.render = (dom: React.ReactNode, record: ColumnItems) => {
         const value = record[element.name];
         if (dom instanceof String) {
-          return moment(value.toString()).format('YYYY-MM-DD HH:mm:ss');
+          return moment(value?.toString()).format('YYYY-MM-DD HH:mm:ss');
         } else if (dom instanceof Number) {
           const formattedValue = timestampToMoment(
             Number(dom).valueOf(),
           ).format('YYYY-MM-DD HH:mm:ss');
           return formattedValue;
         }
-        return moment(value.toString()).format('YYYY-MM-DD HH:mm:ss');
+        return moment(value?.toString()).format('YYYY-MM-DD HH:mm:ss');
       };
       break;
     case 'date':
@@ -66,16 +66,19 @@ const formatColumnValueType = (
         const value = record[element.name];
         // console.debug('column:', element.name, 'value:', value, dom, record, index)
         if (value instanceof String) {
-          return moment(value.toString()).format('YYYY-MM-DD');
+          return moment(value?.toString()).format('YYYY-MM-DD');
         } else if (value instanceof Number) {
           const formattedValue = timestampToMoment(
             Number(value).valueOf(),
           ).format('YYYY-MM-DD');
           return formattedValue;
         }
-        return moment(value.toString()).format('YYYY-MM-DD');
+        return moment(value?.toString()).format('YYYY-MM-DD');
       };
       break;
+    case 'option':
+      column.hideInSearch = true;
+      column.hideInDescriptions = true;
     default:
       break;
   }
@@ -156,28 +159,32 @@ const getTableRowKey = (props?: AutoTableDescriptor) => {
   return rowKey;
 };
 
-const generateBuiltInOperationColumn = (props?: AutoTableDescriptor) => {
+const generateBuiltInOperationColumn = (
+  props?: AutoTableDescriptor,
+  intlInstances?: IntlInstancesType,
+) => {
   const operations: OperationColumnType[] = [];
   if (!props) {
     return operations;
   }
-  const antIntl = antUseIntl();
-  const componentsIntl = componentsUseIntl();
   if (props.viewURL) {
     operations.push({
-      title: componentsIntl.getMessage('basic.view', 'View'),
+      title: intlInstances?.componentsIntl.getMessage('basic.view', 'View'),
       action: 'view',
     });
   }
   if (props.saveURL) {
     operations.push({
-      title: componentsIntl.getMessage('basic.edit', 'Edit'),
+      title: intlInstances?.componentsIntl.getMessage('basic.edit', 'Edit'),
       action: 'update',
     });
   }
   if (props.deleteURL) {
     operations.push({
-      title: antIntl.getMessage('editableTable.action.delete', 'Delete'),
+      title: intlInstances?.antIntl.getMessage(
+        'editableTable.action.delete',
+        'Delete',
+      ),
       action: 'delete',
     });
   }
@@ -193,8 +200,8 @@ export const columnBuiltinOperationAction = async (
   action: ActionType | undefined,
   props?: AutoTableDescriptor,
   autoTableActions?: AutoTableActionType,
+  intlInstances?: IntlInstancesType,
 ) => {
-  const componentsIntl = componentsUseIntl();
   console.debug(
     `click rowIndex:${index} record:${record[rowKey]} operation:${operationAction} with record:`,
     record,
@@ -212,12 +219,13 @@ export const columnBuiltinOperationAction = async (
       autoTableActions?.startEditForm?.(record[rowKey], record);
       break;
     case 'view':
+      autoTableActions?.startViewModal?.(record[rowKey], record);
       break;
     case 'delete':
       {
         if (!props?.deleteURL) {
           message.error(
-            componentsIntl
+            intlInstances?.componentsIntl
               .getMessage(
                 'prompts.propertyWereNotConfigured',
                 '${property} were not configured!',
@@ -267,13 +275,12 @@ const formatColumnOperationsButtons = (
   operations: OperationColumnType[],
   props?: AutoTableDescriptor,
   autoTableActions?: AutoTableActionType,
+  intlInstances?: IntlInstancesType,
 ) => {
   if (!operations) {
     return;
   }
   const rowKey = getTableRowKey(props);
-  const antIntl = antUseIntl();
-  const componentsIntl = componentsUseIntl();
   column.render = (
     dom: React.ReactNode,
     record: ColumnItems,
@@ -284,14 +291,17 @@ const formatColumnOperationsButtons = (
     operations.forEach((operation, index) => {
       if (operation.action) {
         const operationAction = operation.action;
-        let popConfirmMessage = '';
+        let popConfirmMessage: string | undefined = '';
         if (operation.action === 'delete') {
           popConfirmMessage =
-            antIntl.getMessage('deleteThisLine', 'Delete this line') + '?';
+            intlInstances?.antIntl.getMessage(
+              'deleteThisLine',
+              'Delete this line',
+            ) + '?';
         } else if (operation.popConfirmMessage || operation.dange) {
           popConfirmMessage = operation.popConfirmMessage
             ? operation.popConfirmMessage
-            : componentsIntl.getMessage(
+            : intlInstances?.componentsIntl.getMessage(
                 'sureToDoThis',
                 'Are you sure to do this operation?',
               );
@@ -311,6 +321,7 @@ const formatColumnOperationsButtons = (
                   action,
                   props,
                   autoTableActions,
+                  intlInstances,
                 );
               }}
             >
@@ -331,6 +342,7 @@ const formatColumnOperationsButtons = (
                   action,
                   props,
                   autoTableActions,
+                  intlInstances,
                 );
               }}
             >
@@ -387,6 +399,7 @@ const formatColumn = (
   element: ColumnDescriptor,
   props?: AutoTableDescriptor,
   autoTableActions?: AutoTableActionType,
+  intlInstances?: IntlInstancesType,
 ) => {
   const column: ColumnItems = {
     dataIndex: element.name,
@@ -400,6 +413,7 @@ const formatColumn = (
     hideInSearch: element.hideInSearch,
     hideInForm: element.hideInForm,
     hideInSetting: element.hideInSetting,
+    hideInDescriptions: element.hideInDescriptions,
     key: element.key,
     // editable: element.editable,
     disable: element.disable,
@@ -423,11 +437,13 @@ const formatColumn = (
     formatColumnTagsRender(column, element.tagOptions);
   }
   if (element.opearations) {
+    column.hideInDescriptions = true;
     formatColumnOperationsButtons(
       column,
       element.opearations,
       props,
       autoTableActions,
+      intlInstances,
     );
   }
   return column;
@@ -437,22 +453,28 @@ export const formatColumns = (
   columns?: ColumnDescriptor[],
   props?: AutoTableDescriptor,
   autoTableActions?: AutoTableActionType,
+  intlInstances?: IntlInstancesType,
 ) => {
-  const componentsIntl = componentsUseIntl();
-  const tableColumns: ProColumns<ColumnItems>[] = [];
+  const tableColumns:
+    | ProColumns<ColumnItems>[]
+    | ProDescriptionsItemProps<ColumnItems>[] = [];
   if (!columns) {
     tableColumns.push({
       dataIndex: 'key',
       title:
-        componentsIntl.getMessage('prompts.emptyColumns', 'Empty Columns') +
-        '!',
+        intlInstances?.componentsIntl.getMessage(
+          'prompts.emptyColumns',
+          'Empty Columns',
+        ) + '!',
     });
     return tableColumns;
   }
   let hasOperationColumn = false;
   // iterate each column descriptor element
   columns.forEach((element) => {
-    tableColumns.push(formatColumn(element, props, autoTableActions));
+    tableColumns.push(
+      formatColumn(element, props, autoTableActions, intlInstances),
+    );
     if (element.valueType === 'option') {
       hasOperationColumn = true;
     }
@@ -462,12 +484,15 @@ export const formatColumns = (
     (props?.saveURL || props?.newURL || props?.deleteURL)
   ) {
     // auto add built in CRUD buttons
-    const operations = generateBuiltInOperationColumn(props);
+    const operations = generateBuiltInOperationColumn(props, intlInstances);
     // console.debug('builtin operations:', operations)
     tableColumns.push(
       formatColumn(
         {
-          label: componentsIntl.getMessage('basic.operation', 'Operation'),
+          label: intlInstances?.componentsIntl.getMessage(
+            'basic.operation',
+            'Operation',
+          ),
           name: 'option',
           valueType: 'option',
           hideInSearch: true,
@@ -476,6 +501,7 @@ export const formatColumns = (
         },
         props,
         autoTableActions,
+        intlInstances,
       ),
     );
   }
