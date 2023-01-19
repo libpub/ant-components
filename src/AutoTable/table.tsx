@@ -14,6 +14,7 @@ import { useComponentsIntl } from '../locales';
 import { doUrlQuery, fetchData } from '../services/datafetch';
 import { formatColumns } from './columns';
 import { formatToolBar, saveFormRecords } from './operations';
+import RelationForm from './relationform';
 import type {
   AutoTableActionType,
   AutoTableDescriptor,
@@ -21,6 +22,7 @@ import type {
   AutoTableToolbarParamsOptionsType,
   ColumnItems,
   IntlInstancesType,
+  OperationColumnType,
 } from './typing';
 
 const AutoTable = (props: AutoTableDescriptor) => {
@@ -29,9 +31,12 @@ const AutoTable = (props: AutoTableDescriptor) => {
   const { title } = props;
   const [editFormVisible, setEditFormVisible] = useState(false);
   const [viewModalVisible, setViewModalVisible] = useState(false);
+  const [relationModalVisible, setRelationModalVisible] = useState(false);
   const [viewModalItemData, setViewModalItemData] = useState<ColumnItems>({});
   const [editFormState, setEditFormState] =
     useState<AutoTableEditFormStateType>({ editMode: undefined });
+  const [recordOperationProps, setRecordOperationProps] =
+    useState<OperationColumnType>({ title: '' });
 
   const rowKey = props.rowKey ? props.rowKey : 'id';
   const antIntl = antUseIntl();
@@ -74,7 +79,14 @@ const AutoTable = (props: AutoTableDescriptor) => {
         formRef.current?.setFieldsValue(record);
         setEditFormVisible(true);
       } else {
-        message.error('saveURL address were not configured');
+        message.error(
+          componentsIntl
+            .getMessage(
+              'prompts.propertyWereNotConfigured',
+              '${property} were not configured!',
+            )
+            .replace('${property}', 'saveURL'),
+        );
       }
       return true;
     },
@@ -112,6 +124,28 @@ const AutoTable = (props: AutoTableDescriptor) => {
         console.debug(`view model close by row key:${recordKey}`);
       }
       setViewModalVisible(false);
+      return true;
+    },
+    startRelationModal: async (
+      recordKey: React.Key,
+      record: ColumnItems,
+      props?: OperationColumnType,
+    ) => {
+      setEditFormState({
+        editMode: 'relation',
+        recordKey: recordKey,
+        saveURL: props?.saveURL,
+        httpMethod: props?.httpMethod,
+      });
+      if (props) {
+        setRecordOperationProps(props);
+      }
+      setRelationModalVisible(true);
+      return true;
+    },
+    cancelRelationModal: (recordKey: React.Key) => {
+      console.debug('cancel relation modal by key:', recordKey);
+      setRelationModalVisible(false);
       return true;
     },
   };
@@ -170,7 +204,7 @@ const AutoTable = (props: AutoTableDescriptor) => {
                     // TODO
                   }
                   return await saveFormRecords(
-                    props.saveURL,
+                    props.saveURL.replace(':id', key.toString()),
                     props.saveURLMethod,
                     record,
                     rowKey,
@@ -182,7 +216,7 @@ const AutoTable = (props: AutoTableDescriptor) => {
                     return false;
                   }
                   const result = await doUrlQuery(
-                    props.deleteURL,
+                    props.deleteURL.replace(':id', key.toString()),
                     props.deleteURLMethod ? props.deleteURLMethod : 'DELETE',
                     record,
                     rowKey,
@@ -243,12 +277,14 @@ const AutoTable = (props: AutoTableDescriptor) => {
           props.saveFormMode !== 'QueryFilter'
         }
         onFinish={async (values) => {
+          let saveURL = editFormState.saveURL;
           if (editFormState.editMode === 'update' && !values[rowKey]) {
             values[rowKey] = editFormState.recordKey;
+            saveURL = saveURL?.replace(':id', values[rowKey].toString());
           }
           console.log('onSaveForm model submit with values:', values);
           const result = await saveFormRecords(
-            editFormState.saveURL,
+            saveURL,
             editFormState.httpMethod,
             values,
             rowKey,
@@ -262,7 +298,7 @@ const AutoTable = (props: AutoTableDescriptor) => {
         }
       />
       <Modal
-        visible={viewModalVisible}
+        open={viewModalVisible}
         onCancel={() => {
           setViewModalVisible(false);
         }}
@@ -277,6 +313,25 @@ const AutoTable = (props: AutoTableDescriptor) => {
           columns={columns as ProDescriptionsItemProps<ColumnItems>[]}
         ></ProDescriptions>
       </Modal>
+      <RelationForm
+        open={relationModalVisible}
+        title={recordOperationProps.title}
+        recordKey={editFormState.recordKey}
+        mode={recordOperationProps.modalLayoutMode}
+        componentsIntl={componentsIntl}
+        searchURL={recordOperationProps.searchURL}
+        saveURL={recordOperationProps.saveURL}
+        selectedURL={recordOperationProps.selectedURL}
+        keyFieldName={recordOperationProps.keyFieldName}
+        titleFieldName={recordOperationProps.titleFieldName}
+        childrenFieldName={recordOperationProps.childrenFieldName}
+        onOk={() => {
+          setRelationModalVisible(false);
+        }}
+        onCancel={() => {
+          setRelationModalVisible(false);
+        }}
+      />
     </>
   );
 };

@@ -65,14 +65,7 @@ const columns: ColumnDescriptor[] = [
     valueType: 'dateRange',
     hideInTable: true,
     hideInForm: true,
-    // search: {
-    //   transform: (value) => {
-    //     return {
-    //       startTime: value[0],
-    //       endTime: value[1],
-    //     };
-    //   },
-    // },
+    hideInDescriptions: true,
   },
   {
     label: '操作',
@@ -82,18 +75,45 @@ const columns: ColumnDescriptor[] = [
     key: 'option',
     operations: [
       {
-        title: '编辑',
-        action: 'inlineedit',
+        title: '权限',
+        action: 'relation',
+        icon: 'LockOutlined',
+        modalLayoutMode: 'group',
+        keyFieldName: 'id',
+        titleFieldName: 'name',
+        searchURL: [
+          { id: 1, name: '首页' },
+          {
+            id: 2,
+            name: '机构管理',
+            children: [
+              { id: 21, name: '机构列表' },
+              { id: 22, name: '机构维护' },
+            ],
+          },
+          {
+            id: 3,
+            name: '系统管理',
+            children: [
+              { id: 31, name: '用户管理' },
+              { id: 32, name: '角色管理' },
+              { id: 33, name: '权限管理' },
+            ],
+          },
+        ],
+        saveURL: '',
+        selectedURL: [2, { id: 21 }, 3, 31],
       },
       {
-        title: '查看',
-        url: '',
+        title: '编辑',
+        action: 'update',
+        icon: 'form',
       },
       {
         title: '',
         menus: [
-          { key: 'copy', title: '复制' },
-          { key: 'delete', title: '删除' },
+          { key: 'copy', title: '复制', icon: 'copy' },
+          { key: 'delete', title: '删除', icon: 'delete' },
         ],
       },
     ],
@@ -112,7 +132,7 @@ export default () => {
         pageSize: 5,
       }}
       // dateFormatter="string"
-      title="高级表格"
+      title="有分组布局关联关系表单按钮的表格"
       toolbar={[
         { title: '新建', primary: true, icon: <PlusOutlined /> },
         {

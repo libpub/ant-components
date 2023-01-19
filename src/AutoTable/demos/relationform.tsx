@@ -1,5 +1,7 @@
+import { EllipsisOutlined, PlusOutlined } from '@ant-design/icons';
 import type { ColumnDescriptor } from '@lycium/ant-components';
 import { AutoTable } from '@lycium/ant-components';
+import { Button } from 'antd';
 import React from 'react';
 
 const columns: ColumnDescriptor[] = [
@@ -8,14 +10,6 @@ const columns: ColumnDescriptor[] = [
     label: '',
     valueType: 'indexBorder',
     width: 48,
-  },
-  {
-    name: 'id',
-    label: 'ID',
-    hideInTable: true,
-    hideInForm: true,
-    readonly: true,
-    hideInSearch: true,
   },
   {
     label: '标题',
@@ -72,14 +66,41 @@ const columns: ColumnDescriptor[] = [
     hideInTable: true,
     hideInForm: true,
     hideInDescriptions: true,
-    // search: {
-    //   transform: (value) => {
-    //     return {
-    //       startTime: value[0],
-    //       endTime: value[1],
-    //     };
-    //   },
-    // },
+  },
+  {
+    label: '操作',
+    name: 'option',
+    valueType: 'option',
+    hideInSearch: true,
+    key: 'option',
+    operations: [
+      {
+        title: '角色',
+        action: 'relation',
+        icon: 'TeamOutlined',
+        modalLayoutMode: 'checkbox',
+        searchURL: [
+          { key: 1, title: '管理员' },
+          { key: 2, title: '组长' },
+          { key: 3, title: '操作员' },
+          { key: 4, title: '审计员' },
+        ],
+        saveURL: '',
+        selectedURL: [3],
+      },
+      {
+        title: '编辑',
+        action: 'update',
+        icon: 'form',
+      },
+      {
+        title: '',
+        menus: [
+          { key: 'copy', title: '复制', icon: 'copy' },
+          { key: 'delete', title: '删除', icon: 'delete' },
+        ],
+      },
+    ],
   },
 ];
 
@@ -89,17 +110,37 @@ export default () => {
       columns={columns}
       cardBordered
       fetchDataURL={'https://proapi.azurewebsites.net/github/issues'}
-      saveURL={'https://proapi.azurewebsites.net/github/issues'}
-      newURL={'https://proapi.azurewebsites.net/github/issues'}
-      viewURL={'https://proapi.azurewebsites.net/github/issues'}
-      deleteURL={'https://proapi.azurewebsites.net/github/issues'}
       editable={true}
       rowKey="id"
       pagination={{
         pageSize: 5,
       }}
       // dateFormatter="string"
-      title="内置CRUD表格"
+      title="可配置记录关联关系表格"
+      toolbar={[
+        { title: '新建', primary: true, icon: <PlusOutlined /> },
+        {
+          title: (
+            <Button>
+              <EllipsisOutlined />
+            </Button>
+          ),
+          menus: [
+            {
+              title: '1st item',
+              key: '1',
+            },
+            {
+              title: '2nd item',
+              key: '2',
+            },
+            {
+              title: '3rd item',
+              key: '3',
+            },
+          ],
+        },
+      ]}
     />
   );
 };

@@ -46,8 +46,8 @@
   "dependencies": {
     "@ant-design/icons": "^4.8.0",
     "@ant-design/pro-components": "^2.3.35",
+    "@ant-design/pro-provider": "^2.1.4",
     "@umijs/max": "^4.0.34",
-    "@umijs/plugin-model": "^2.6.2",
     "antd": "^5.0.2",
     "moment": "^2.29.4",
     "umi": "^4.0.34",
@@ -56,8 +56,9 @@
   "devDependencies": {
     "@commitlint/cli": "^17.1.2",
     "@commitlint/config-conventional": "^17.1.0",
+    "@types/lodash": "^4.14.191",
     "@umijs/lint": "^4.0.0",
-    "dumi": "^2.0.0-rc.0",
+    "dumi": "^2.0.13",
     "eslint": "^8.23.0",
     "father": "^4.1.0",
     "husky": "^8.0.1",
@@ -70,6 +71,7 @@
     "stylelint": "^14.9.1"
   },
   "peerDependencies": {
+    "dumi": "^2.0.13",
     "react": ">=16.9.0",
     "react-dom": ">=16.9.0"
   },

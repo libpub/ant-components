@@ -1,3 +1,4 @@
+import { DeleteOutlined, EyeOutlined, FormOutlined } from '@ant-design/icons';
 import {
   ActionType,
   ProColumns,
@@ -6,11 +7,12 @@ import {
   ProSchemaValueEnumType,
   TableDropdown,
 } from '@ant-design/pro-components';
-import { DropdownProps } from '@ant-design/pro-table/es/components/Dropdown';
-import { message, Popconfirm, Space, Tag } from 'antd';
+import type { DropdownProps } from '@ant-design/pro-table/es/components/Dropdown';
+import { Button, message, Popconfirm, Space, Tag, Tooltip } from 'antd';
 import moment from 'moment';
 import React from 'react';
 import { doUrlQuery } from '../services/datafetch';
+import Icon from '../utils/icons';
 import type {
   AutoTableActionType,
   AutoTableDescriptor,
@@ -171,12 +173,14 @@ const generateBuiltInOperationColumn = (
     operations.push({
       title: intlInstances?.componentsIntl.getMessage('basic.view', 'View'),
       action: 'view',
+      icon: <EyeOutlined />,
     });
   }
   if (props.saveURL) {
     operations.push({
       title: intlInstances?.componentsIntl.getMessage('basic.edit', 'Edit'),
       action: 'update',
+      icon: <FormOutlined />,
     });
   }
   if (props.deleteURL) {
@@ -186,6 +190,7 @@ const generateBuiltInOperationColumn = (
         'Delete',
       ),
       action: 'delete',
+      icon: <DeleteOutlined />,
     });
   }
   return operations;
@@ -199,6 +204,7 @@ export const columnBuiltinOperationAction = async (
   index: number,
   action: ActionType | undefined,
   props?: AutoTableDescriptor,
+  operationProps?: OperationColumnType,
   autoTableActions?: AutoTableActionType,
   intlInstances?: IntlInstancesType,
 ) => {
@@ -246,6 +252,13 @@ export const columnBuiltinOperationAction = async (
         }
       }
       break;
+    case 'relation':
+      autoTableActions?.startRelationModal?.(
+        record[rowKey],
+        record,
+        operationProps,
+      );
+      break;
   }
 };
 
@@ -268,6 +281,24 @@ const columnMenuItemOperation = async (
   );
   switch (key) {
   }
+};
+
+const renderIconText = (icon: React.ReactNode, title: React.ReactNode) => {
+  if (typeof icon === 'string') {
+    return <Tooltip title={title}>{Icon({ icon })}</Tooltip>;
+  }
+  return (
+    <Tooltip title={title}>
+      <Button icon={icon} size="small" type="link"></Button>
+    </Tooltip>
+  );
+};
+
+const renderIconElement = (icon: React.ReactNode) => {
+  if (typeof icon === 'string') {
+    return Icon({ icon });
+  }
+  return icon;
 };
 
 const formatColumnOperationsButtons = (
@@ -320,12 +351,17 @@ const formatColumnOperationsButtons = (
                   index,
                   action,
                   props,
+                  operation,
                   autoTableActions,
                   intlInstances,
                 );
               }}
             >
-              <a>{operation.title}</a>
+              {operation.icon ? (
+                renderIconText(operation.icon, operation.title)
+              ) : (
+                <a>{operation.title}</a>
+              )}
             </Popconfirm>,
           );
         } else {
@@ -341,12 +377,15 @@ const formatColumnOperationsButtons = (
                   index,
                   action,
                   props,
+                  operation,
                   autoTableActions,
                   intlInstances,
                 );
               }}
             >
-              {operation.title}
+              {operation.icon
+                ? renderIconText(operation.icon, operation.title)
+                : operation.title}
             </a>,
           );
         }
@@ -370,6 +409,7 @@ const formatColumnOperationsButtons = (
           dropDownProps.menus?.push({
             key: e.key ? e.key : '',
             name: e.title,
+            icon: e.icon ? renderIconElement(e.icon) : undefined,
           });
         });
         buttons.push(
@@ -436,11 +476,11 @@ const formatColumn = (
   if (element.tagOptions) {
     formatColumnTagsRender(column, element.tagOptions);
   }
-  if (element.opearations) {
+  if (element.operations) {
     column.hideInDescriptions = true;
     formatColumnOperationsButtons(
       column,
-      element.opearations,
+      element.operations,
       props,
       autoTableActions,
       intlInstances,
@@ -490,14 +530,14 @@ export const formatColumns = (
       formatColumn(
         {
           label: intlInstances?.componentsIntl.getMessage(
-            'basic.operation',
-            'Operation',
+            'basic.action',
+            'Action',
           ),
           name: 'option',
           valueType: 'option',
           hideInSearch: true,
           key: 'option',
-          opearations: operations,
+          operations: operations,
         },
         props,
         autoTableActions,
@@ -506,6 +546,6 @@ export const formatColumns = (
     );
   }
 
-  console.debug('tableColumns:', tableColumns);
+  // console.debug('tableColumns:', tableColumns);
   return tableColumns;
 };

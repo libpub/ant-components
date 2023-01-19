@@ -1,5 +1,6 @@
 import { message } from 'antd';
 import type { SortOrder } from 'antd/es/table/interface';
+import React from 'react';
 import request from 'umi-request';
 
 import type {
@@ -9,17 +10,17 @@ import type {
 } from '../AutoTable/typing';
 import type { BuiltinPageSchemaType } from '../BuiltinPage/typing';
 
-type AntPaginationParams = {
+export type AntPaginationParams = {
   current?: number;
   pageSize?: number;
 };
-type AntListResult = {
+export type AntListResult = {
   data?: any[];
   /** 列表的内容总数 */
   total?: number;
   success?: boolean;
 };
-type AntGeneralResult<T = any> = {
+export type AntGeneralResult<T = any> = {
   success?: boolean;
   message?: string;
   data?: T;
@@ -93,23 +94,37 @@ const fetchData = async (
 };
 
 const doUrlQuery = async <T = any>(
-  url: string,
+  url: string | React.ReactText[] | Record<string, any>[] | Record<string, any>,
   method: string | undefined,
-  record: ColumnItems,
+  record: ColumnItems | ColumnItems[],
   rowKey?: string,
 ) => {
+  const result: AntGeneralResult<T> = {
+    success: false,
+  };
   if (!url) {
-    return undefined;
+    return result;
+  }
+  if (typeof url === 'object') {
+    result.success = true;
+    result.data = url as any;
+    return result;
   }
   const httpMethod = method ? method.toUpperCase() : 'GET';
-  const params: Record<string, any> | undefined = {};
+  let params: Record<string, any> | Record<string, any>[] | undefined = {};
   const isAllFields = httpMethod === 'POST' || httpMethod === 'PUT';
-  if (!isAllFields && rowKey && record && record[rowKey]) {
-    params[rowKey] = record[rowKey];
-  } else {
-    for (const k in record) {
-      if (record.hasOwnProperty(k)) {
-        params[k] = record[k];
+  if (record) {
+    if (record instanceof Array) {
+      params = record;
+    } else {
+      if (!isAllFields && rowKey && record && record[rowKey]) {
+        params[rowKey] = record[rowKey];
+      } else {
+        for (const k in record) {
+          if (record.hasOwnProperty(k)) {
+            params[k] = record[k];
+          }
+        }
       }
     }
   }
@@ -132,16 +147,23 @@ const doUrlQuery = async <T = any>(
       message: String(e),
     };
   }
-  const result: AntGeneralResult<T> = {
-    success: false,
-  };
+
   if (resp) {
     result.message = resp.message;
     if (resp.code === 0 || (resp.code === undefined && resp.success)) {
       result.success = true;
       result.data = resp.data;
-      return resp;
+      return result;
     } else {
+      // consider exception result format
+      if (resp.code === undefined && resp.success === undefined) {
+        const normalizedResp: Record<string, any> = resp;
+        if (normalizedResp.results) {
+          result.success = true;
+          result.data = normalizedResp.results;
+          return result;
+        }
+      }
       message.error(resp.message);
     }
   } else {

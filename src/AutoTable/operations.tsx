@@ -10,6 +10,7 @@ import {
   AutoTableDescriptor,
   AutoTableToolbarParamsOptionsType,
   ColumnItems,
+  OperationColumnType,
 } from './typing';
 
 const toolbarMenuOperation = async (key: string) => {
@@ -68,6 +69,7 @@ export const formatToolBar = (
                 index,
                 autoTableOptions.actionRef.current,
                 props,
+                operation,
                 autoTableOptions.autoTableActions,
               );
             }}
@@ -94,6 +96,7 @@ export const formatToolBar = (
                 index,
                 autoTableOptions.actionRef.current,
                 props,
+                operation,
                 autoTableOptions.autoTableActions,
               );
             }}
@@ -151,7 +154,7 @@ export const formatToolBar = (
       );
     }
   });
-  console.debug(' --->> toolbar:', buttons);
+  // console.debug(' --->> toolbar:', buttons);
   return buttons;
 };
 
@@ -197,7 +200,14 @@ export const extendAutoTableActions = (
         autoTableOptions.formRef.current?.setFieldsValue(record);
         autoTableOptions.setEditFormVisible(true);
       } else {
-        message.error('saveURL address were not configured');
+        message.error(
+          autoTableOptions.componentsIntl
+            .getMessage(
+              'prompts.propertyWereNotConfigured',
+              '${property} were not configured!',
+            )
+            .replace('${property}', 'saveURL'),
+        );
       }
       return true;
     },
@@ -230,6 +240,22 @@ export const extendAutoTableActions = (
         console.debug(`view model close by row key:${recordKey}`);
       }
       autoTableOptions.setViewModalVisible(false);
+      return true;
+    },
+    startRelationModal: async (
+      recordKey: React.Key,
+      record: ColumnItems,
+      props?: OperationColumnType,
+    ) => {
+      if (false) {
+        console.debug('start relation modal', recordKey, record, props);
+      }
+      return true;
+    },
+    cancelRelationModal: (recordKey: React.Key) => {
+      if (false) {
+        console.debug('cancel relation modal', recordKey);
+      }
       return true;
     },
   };

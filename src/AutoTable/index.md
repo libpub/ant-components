@@ -23,3 +23,23 @@ AutoTable:
 ### 使用自带 keyWords 搜索的 table
 
 <code src="./demos/search.tsx" background="#f5f5f5" height="319px" description="使用自带 keyWords 搜索的 table">使用自带 keyWords 搜索的 table</code>
+
+### 使用自定义图标操作按钮的 table
+
+<code src="./demos/customactionicon.tsx" background="#f5f5f5" height="319px" description="使用自定义图标操作按钮的 table">使用自定义图标操作按钮的 table</code>
+
+### 有关联关系表单按钮的 table
+
+<code src="./demos/relationform.tsx" background="#f5f5f5" height="319px" description="有关联关系表单按钮的 table">有关联关系表单按钮的 table</code>
+
+### 有树形关联关系表单按钮的 table
+
+<code src="./demos/relationtreeform.tsx" background="#f5f5f5" height="319px" description="有树形关联关系表单按钮的 table">有树形关联关系表单按钮的 table</code>
+
+### 即时搜索关联关系表单按钮的 table
+
+<code src="./demos/relationsearchform.tsx" background="#f5f5f5" height="319px" description="即时搜索关联关系表单按钮的 table">即时搜索关联关系表单按钮的 table</code>
+
+### 有分组布局关联关系表单按钮的 table
+
+<code src="./demos/relationgroupform.tsx" background="#f5f5f5" height="319px" description="有分组布局关联关系表单按钮的 table">有分组布局关联关系表单按钮的 table</code>

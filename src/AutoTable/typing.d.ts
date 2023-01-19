@@ -54,7 +54,28 @@ export declare type ColumnBuiltinOperationTypes =
   | 'add'
   | 'update'
   | 'delete'
-  | 'view';
+  | 'view'
+  | 'relation';
+
+export declare type RelationFormLayoutMode =
+  | 'tree'
+  | 'group'
+  | 'checkbox'
+  | 'search';
+
+export declare type CommonArrayElementType =
+  | string
+  | number
+  | Record<string, any>;
+
+export type TreeDataNode =
+  | Record<string, string | number>
+  | {
+      title?: string;
+      key?: string;
+      isLeaf?: boolean;
+      children?: TreeDataNode[];
+    };
 
 export declare type OperationColumnType = {
   /** @name 演示的文案 */
@@ -73,6 +94,13 @@ export declare type OperationColumnType = {
   /** 弹出确认提醒消息 */
   popConfirmMessage?: string;
   primary?: boolean;
+  searchURL?: string | TreeDataNode[];
+  saveURL?: string;
+  selectedURL?: string | CommonArrayElementType[];
+  modalLayoutMode?: RelationFormLayoutMode;
+  keyFieldName?: string;
+  titleFieldName?: string;
+  childrenFieldName?: string;
 };
 
 export type ColumnDescriptor = {
@@ -129,7 +157,7 @@ export type ColumnDescriptor = {
   /** @name sortable */
   sortable?: boolean;
   /** button operations */
-  opearations?: OperationColumnType[];
+  operations?: OperationColumnType[];
   /** @name disable 列设置中复选框disabled的状态 */
   disable?: boolean;
   /** @name 用户表单时的初始值 */
@@ -231,10 +259,16 @@ export type AutoTableActionType = {
     record: ColumnItems,
   ) => Promise<boolean | undefined>;
   cancelViewModal: (recordKey: React.Key) => boolean;
+  startRelationModal: (
+    recordKey: React.Key,
+    record: ColumnItems,
+    props?: OperationColumnType,
+  ) => Promise<boolean | undefined>;
+  cancelRelationModal: (recordKey: React.Key) => boolean;
 };
 
 export type AutoTableEditFormStateType = {
-  editMode: 'add' | 'update' | undefined;
+  editMode: 'add' | 'update' | 'relation' | undefined;
   recordKey?: React.Key;
   saveURL?: string;
   httpMethod?: string;
@@ -258,4 +292,20 @@ export type AutoTableToolbarParamsOptionsType = {
   setViewModalVisible: (value: React.SetStateAction<boolean>) => void;
   setViewModalItemData: (value: React.SetStateAction<ColumnItems>) => void;
   formRef: React.MutableRefObject<ProFormInstance<ColumnItems> | undefined>;
+};
+
+export type RelationFormProperties = {
+  recordKey?: string | number;
+  open?: boolean;
+  title?: React.ReactNode;
+  mode?: RelationFormLayoutMode;
+  componentsIntl: IntlType;
+  searchURL?: string | TreeDataNode[];
+  saveURL?: string;
+  selectedURL?: string | CommonArrayElementType[];
+  keyFieldName?: string;
+  titleFieldName?: string;
+  childrenFieldName?: string;
+  onOk?: () => void;
+  onCancel?: () => void;
 };
