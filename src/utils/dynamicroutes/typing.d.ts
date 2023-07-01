@@ -19,6 +19,7 @@ declare namespace DynamicRoutes {
     name: string;
     sort: number;
     path: string;
+    icon?: React.ReactNode;
     microApp?: string;
     autoPage?: string;
     autoPageSchema?: string;
@@ -32,6 +33,7 @@ declare namespace DynamicRoutes {
     parentId: 'ant-design-pro-layout' | string;
     name: string;
     path: string;
+    icon?: React.ReactNode;
     microApp?: string;
     microAppProps?: MicroAppProps;
     file?: string;
@@ -56,5 +58,6 @@ declare namespace DynamicRoutes {
   interface ParseRoutesReturnType {
     routes: DynamicRoutes.ParsedRoutes;
     routeComponents: DynamicRoutes.ParsedRouteComponent;
+    currentIdx: number;
   }
 }

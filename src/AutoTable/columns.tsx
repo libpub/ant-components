@@ -4,6 +4,7 @@ import {
   ProColumns,
   ProDescriptionsItemProps,
   ProFieldValueEnumType,
+  ProFormColumnsType,
   ProSchemaValueEnumType,
   TableDropdown,
 } from '@ant-design/pro-components';
@@ -497,7 +498,8 @@ export const formatColumns = (
 ) => {
   const tableColumns:
     | ProColumns<ColumnItems>[]
-    | ProDescriptionsItemProps<ColumnItems>[] = [];
+    | ProDescriptionsItemProps<ColumnItems>[]
+    | ProFormColumnsType<ColumnItems> = [];
   if (!columns) {
     tableColumns.push({
       dataIndex: 'key',
@@ -546,6 +548,6 @@ export const formatColumns = (
     );
   }
 
-  // console.debug('tableColumns:', tableColumns);
+  console.debug('tableColumns:', tableColumns);
   return tableColumns;
 };

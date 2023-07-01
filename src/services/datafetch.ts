@@ -111,6 +111,7 @@ const doUrlQuery = async <T = any>(
     return result;
   }
   const httpMethod = method ? method.toUpperCase() : 'GET';
+  let queryURL = url;
   let params: Record<string, any> | Record<string, any>[] | undefined = {};
   const isAllFields = httpMethod === 'POST' || httpMethod === 'PUT';
   if (record) {
@@ -118,7 +119,11 @@ const doUrlQuery = async <T = any>(
       params = record;
     } else {
       if (!isAllFields && rowKey && record && record[rowKey]) {
-        params[rowKey] = record[rowKey];
+        if (queryURL.match(/(?<=\/)(:id)(?<=\b|\/)/)) {
+          queryURL = queryURL.replace(/(?<=\/)(:id)(?<=\b|\/)/, record[rowKey]);
+        } else {
+          params[rowKey] = record[rowKey];
+        }
       } else {
         for (const k in record) {
           if (record.hasOwnProperty(k)) {
@@ -131,7 +136,7 @@ const doUrlQuery = async <T = any>(
 
   let resp: GeneralQueryResult<T>;
   try {
-    resp = await request<GeneralQueryResult<T>>(url, {
+    resp = await request<GeneralQueryResult<T>>(queryURL, {
       method: httpMethod,
       headers: {
         'Content-Type': 'application/json',
@@ -141,7 +146,7 @@ const doUrlQuery = async <T = any>(
       data: httpMethod === 'POST' || httpMethod === 'PUT' ? params : undefined,
     });
   } catch (e) {
-    console.error(`query ${url} failed with error`, e);
+    console.error(`query ${queryURL} failed with error`, e);
     resp = {
       code: 500,
       message: String(e),
@@ -167,7 +172,7 @@ const doUrlQuery = async <T = any>(
       message.error(resp.message);
     }
   } else {
-    result.message = `Query ${url} got empty response!`;
+    result.message = `Query ${queryURL} got empty response!`;
     message.error(result.message);
   }
   return result;

@@ -45,14 +45,14 @@ const AutoTable = (props: AutoTableDescriptor) => {
     startNewForm: (recordKey?: React.Key) => {
       console.debug(' => startNewForm', recordKey);
       if (props.newURL) {
-        setEditFormVisible(false);
+        // setEditFormVisible(false);
+        setEditFormVisible(true);
         setEditFormState({
           editMode: 'add',
           saveURL: props.newURL,
           httpMethod: props.newURLMethod ? props.newURLMethod : 'POST',
         });
         formRef.current?.resetFields();
-        setEditFormVisible(true);
       } else {
         message.error('newURL address were not configured');
       }
@@ -68,8 +68,10 @@ const AutoTable = (props: AutoTableDescriptor) => {
     },
     startEditForm: (recordKey: React.Key, record: ColumnItems) => {
       console.debug(' => startEditForm', recordKey, 'record:', record);
-      setEditFormVisible(false);
+      // setEditFormVisible(false);
       if (props.saveURL) {
+        setEditFormVisible(true);
+        // console.debug(' --> startEditForm current formRef', formRef.current?.getFieldsValue());
         setEditFormState({
           editMode: 'update',
           recordKey: recordKey,
@@ -77,7 +79,6 @@ const AutoTable = (props: AutoTableDescriptor) => {
           httpMethod: props.saveURLMethod ? props.saveURLMethod : 'POST',
         });
         formRef.current?.setFieldsValue(record);
-        setEditFormVisible(true);
       } else {
         message.error(
           componentsIntl
@@ -259,13 +260,27 @@ const AutoTable = (props: AutoTableDescriptor) => {
         formRef={formRef}
         open={editFormVisible}
         onOpenChange={(visible) => {
-          console.debug('SchemaForm onOpenChange', visible);
+          console.debug(
+            'SchemaForm onOpenChange',
+            visible,
+            'values',
+            formRef.current?.getFieldsValue(),
+          );
           if (editFormVisible && visible !== editFormVisible) {
             setEditFormVisible(false);
           }
         }}
         layoutType={props.saveFormMode ? props.saveFormMode : 'ModalForm'}
-        steps={[{ title: 'ProComponent' }]}
+        {...(props.saveFormMode === 'ModalForm'
+          ? {
+              modalProps: { destroyOnClose: true },
+            }
+          : props.saveFormMode === 'DrawerForm'
+          ? {
+              drawerProps: { destroyOnClose: true },
+            }
+          : {})}
+        // steps={[{ title: 'ProComponent' }]}
         rowProps={{
           gutter: [16, 16],
         }}
@@ -290,12 +305,14 @@ const AutoTable = (props: AutoTableDescriptor) => {
             rowKey,
           );
           if (result) {
+            actionRef.current?.reload();
             setEditFormVisible(false);
           }
         }}
         columns={
           (props.saveFormMode === 'StepsForm' ? [columns] : columns) as any
         }
+        // shouldUpdate={editFormVisible}
       />
       <Modal
         open={viewModalVisible}

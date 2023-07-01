@@ -1,7 +1,6 @@
 import { Alert, Skeleton } from 'antd';
-import { useAppData } from 'dumi';
 import React, { useEffect, useState } from 'react';
-import { useLocation } from 'umi';
+import { useLocation } from 'react-router';
 
 import { AutoTable } from '../AutoTable';
 import { AutoTableDescriptor } from '../AutoTable/typing';
@@ -25,14 +24,12 @@ const BuiltinPage = (props: BuiltinPagePropsType) => {
     useState<AutoTableDescriptor>({});
   // const [builtinPageKey, setBuiltinPageKey] = useState('');
   const componentsIntl = useComponentsIntl();
-  const appData = useAppData();
   const location = useLocation();
 
   useEffect(() => {
     let fetchSchemaURL: string | BuiltinPageSchemaType | undefined = schemaURL;
     let fetchSchemaParams: Record<string, any> | undefined = undefined;
     if (!schemaURL) {
-      console.debug('current dva app:', appData);
       // if no schemaURL configured, try load schema descriptor using default address on same host with website
       fetchSchemaURL =
         ServiceUtils.instance().getBaseURI() + '/api/pages/descriptors';
@@ -46,18 +43,23 @@ const BuiltinPage = (props: BuiltinPagePropsType) => {
     if (fetchSchemaURL) {
       setLoading(true);
       (async function () {
-        console.debug(' -----------------------> ', props);
+        // console.debug(' -----------------------> ', props);
         const schemaResult = await fetchSchemaData(
           fetchSchemaURL,
           'GET',
           fetchSchemaParams,
         );
-        if (schemaResult && schemaResult.success && schemaResult.data) {
+        console.debug(
+          `current ${location.pathname} page schema result:`,
+          schemaResult,
+        );
+        if (schemaResult && schemaResult.data) {
           const data = schemaResult.data;
-          setBuiltinPageType(data.pageType);
+          if (data.pageType) {
+            setBuiltinPageType(data.pageType);
+          }
           if (data.schema) {
             setBuiltinPageSchema({ ...data.schema });
-            console.debug('schema result:', schemaResult);
             if (data.pageType === 'autotable') {
               console.debug('update autotable descriptor');
               setAutoTableDescriptors({ ...data.schema });
@@ -77,7 +79,7 @@ const BuiltinPage = (props: BuiltinPagePropsType) => {
     } else {
       setLoading(false);
     }
-  }, [schemaURL]);
+  }, [schemaURL, location.pathname]);
 
   const renderBuiltinPage = () => {
     let errMessage = '';

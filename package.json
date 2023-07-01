@@ -1,6 +1,6 @@
 {
   "name": "@lycium/ant-components",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "description": "Configurable UI components based on ant design",
   "license": "MIT",
   "module": "dist/index.js",
@@ -49,7 +49,9 @@
     "@ant-design/pro-provider": "^2.1.4",
     "@umijs/max": "^4.0.34",
     "antd": "^5.0.2",
+    "lodash": "^4.17.21",
     "moment": "^2.29.4",
+    "react-router": "^6.14.0",
     "umi": "^4.0.34",
     "umi-request": "^1.4.0"
   },
@@ -58,7 +60,7 @@
     "@commitlint/config-conventional": "^17.1.0",
     "@types/lodash": "^4.14.191",
     "@umijs/lint": "^4.0.0",
-    "dumi": "^2.0.13",
+    "dumi": "^2.2.1",
     "eslint": "^8.23.0",
     "father": "^4.1.0",
     "husky": "^8.0.1",

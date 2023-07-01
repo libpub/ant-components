@@ -1,12 +1,13 @@
-import { Outlet } from '@umijs/max';
+import * as allIcons from '@ant-design/icons';
 import { lazy } from 'react';
+import { Outlet } from 'react-router';
 import type { DynamicRoutes } from './typing';
 
 export function formatRoutePath(path: string) {
   const words = path.replace(/^\//, '').split(/(?<=\w+)\//); // 提取路径单词
   return `/${words
     .map((word: string) =>
-      word.toLowerCase().replace(word[0], word[0].toUpperCase()),
+      word ? word.toLowerCase().replace(word[0], word[0].toUpperCase()) : word,
     )
     .join('/')}`;
 }
@@ -25,8 +26,16 @@ export function generateFilePath(path: string) {
   return `@/pages/${words.join('/pages/')}/index.tsx`;
 }
 
+function formatIcon(name: string, iconType = 'Outlined') {
+  return name
+    .replace(name[0], name[0].toUpperCase())
+    .replace(/-(w)/g, function (all, letter) {
+      return letter.toUpperCase() + iconType;
+    });
+}
+
 export function parseRoutes(
-  routesRaw: DynamicRoutes.RouteRaw[],
+  routesRaw: Map<number | string, DynamicRoutes.RouteRaw>,
   beginIdx: number,
 ): DynamicRoutes.ParseRoutesReturnType {
   const routes: DynamicRoutes.ParsedRoutes = {}; // 转换后的路由信息
@@ -35,7 +44,9 @@ export function parseRoutes(
 
   let currentIdx = beginIdx; // 当前处理的路由项的键。把 patchRoutes 传进来的 routes 看作一个数组，这里就是元素的下标。
 
-  routesRaw.forEach((route) => {
+  Object.keys(routesRaw).forEach((key) => {
+    //@ts-ignore
+    const route = routesRaw[key];
     const formattedRoutePath = formatRoutePath(route.path); // 将服务器返回的路由路径中的单词转换为首字母大写其余小写
     const routePath = generateRoutePath(formattedRoutePath); // 全小写的路由路径
     const componentPath = generateComponentPath(formattedRoutePath); // 组件路径 不含 @/pages/
@@ -59,9 +70,22 @@ export function parseRoutes(
         autoSetLoading: true,
       };
     } else if (route.autoPage) {
-      curComponent = lazy(() => import('@lycium/ant-components/BuiltinPage'));
+      curComponent = lazy(
+        () => import(''.concat('@lycium/ant-components/dist/BuiltinPage')),
+      );
     } else {
       curComponent = lazy(() => import(`@/pages/${componentPath}`));
+    }
+    if (route.icon && typeof route.icon === 'string') {
+      const upperIcon = formatIcon(route.icon);
+      if (upperIcon in allIcons || route.icon in allIcons) {
+        // @ts-ignore
+        curRoute.icon = React.createElement(
+          allIcons[upperIcon] || allIcons[icon],
+        );
+      }
+    } else {
+      curRoute.icon = route.icon;
     }
 
     // 是否为直接显示（不含子路由）的路由记录，如：/home; /Dashboard
@@ -112,5 +136,42 @@ export function parseRoutes(
   return {
     routes,
     routeComponents,
+    currentIdx,
   };
 }
+// @ts-ignore
+// export function patchRoutes({ routes, routeComponents }) {
+//   if (window.dynamicRoutes) {
+//     // 存在 & 成功获取动态路由数据
+//     const currentRouteIndex = Object.keys(routes).length; // 获取已在.umirc.ts 中配置的路由数目
+//     const parsedRoutes = parseRoutes(window.dynamicRoutes, currentRouteIndex);
+//   }
+// }
+
+// @ts-ignore
+export function patchRoutes({ routes, routeComponents }) {
+  const currentRouteIndex = 0; // Object.keys(routes).length;
+  const parsedRoutes = parseRoutes(routes, currentRouteIndex);
+
+  Object.assign(routes, parsedRoutes.routes);
+  Object.assign(routeComponents, parsedRoutes.routeComponents);
+  return { routes, routeComponents };
+  // Object.keys(routes).forEach(key => {
+  //   const { icon } = routes[key];
+  //   if (icon && typeof icon === 'string') {
+  //     const upperIcon = formatIcon(icon);
+  //     if (upperIcon in allIcons || icon in allIcons) {
+  //       // @ts-ignore
+  //       routes[key].icon = React.createElement(allIcons[upperIcon] || allIcons[icon]);
+  //     }
+  //     if (routes[key].children) {
+  //       patchRoutes({routes: routes[key].children, routeComponents});
+  //     }
+  //   }
+  // });
+}
+
+// export function patchRoutes({ routes }) {
+//   console.debug('patch routes', routes);
+
+// }
