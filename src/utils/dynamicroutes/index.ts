@@ -81,6 +81,7 @@ export function parseRoutes(
       if (upperIcon in allIcons || route.icon in allIcons) {
         // @ts-ignore
         curRoute.icon = React.createElement(
+          // @ts-ignore
           allIcons[upperIcon] || allIcons[icon],
         );
       }
