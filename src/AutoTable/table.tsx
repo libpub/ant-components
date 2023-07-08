@@ -204,12 +204,15 @@ const AutoTable = (props: AutoTableDescriptor) => {
                   if (newLineConfig) {
                     // TODO
                   }
-                  return await saveFormRecords(
+                  const ok = await saveFormRecords(
                     props.saveURL.replace(':id', key.toString()),
                     props.saveURLMethod,
                     record,
                     rowKey,
                   );
+                  if (ok) {
+                    actionRef.current?.reload();
+                  }
                 },
                 onDelete: async (key, record) => {
                   if (!props.deleteURL) {
@@ -223,6 +226,7 @@ const AutoTable = (props: AutoTableDescriptor) => {
                     rowKey,
                   );
                   if (result && result.success) {
+                    actionRef.current?.reload();
                     return true;
                   }
                 },

@@ -249,6 +249,7 @@ export const columnBuiltinOperationAction = async (
         );
         console.debug('delete url query result:', result);
         if (result && result.success) {
+          action?.reload();
           return true;
         }
       }
