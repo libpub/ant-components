@@ -1,17 +1,20 @@
 import {
   ActionType,
   BetaSchemaForm,
+  ProColumns,
+  ProCoreActionType,
   ProDescriptions,
   ProDescriptionsItemProps,
+  ProFormColumnsType,
   ProFormInstance,
   ProTable,
 } from '@ant-design/pro-components';
 import { useIntl as antUseIntl } from '@ant-design/pro-provider';
 import { message, Modal } from 'antd';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { useComponentsIntl } from '../locales';
-import { doUrlQuery, fetchData } from '../services/datafetch';
+import { doUrlQuery, fetchData, fetchSchemaData } from '../services/datafetch';
 import { formatColumns } from './columns';
 import { formatToolBar, saveFormRecords } from './operations';
 import RelationForm from './relationform';
@@ -28,6 +31,7 @@ import type {
 const AutoTable = (props: AutoTableDescriptor) => {
   const actionRef = useRef<ActionType>();
   const formRef = useRef<ProFormInstance<ColumnItems>>();
+  const schemaFormActionRef = useRef<ProCoreActionType>();
   const { title } = props;
   const [editFormVisible, setEditFormVisible] = useState(false);
   const [viewModalVisible, setViewModalVisible] = useState(false);
@@ -37,142 +41,205 @@ const AutoTable = (props: AutoTableDescriptor) => {
     useState<AutoTableEditFormStateType>({ editMode: undefined });
   const [recordOperationProps, setRecordOperationProps] =
     useState<OperationColumnType>({ title: '' });
+  const [columns, setColumns] = useState<ProColumns<ColumnItems>[] | ProDescriptionsItemProps<ColumnItems>[]>([]);
+  const [schemaFormColumns, setSchemaFormColumns] = useState<ProColumns<ColumnItems>[]
+  | ProDescriptionsItemProps<ColumnItems>[]
+  | ProFormColumnsType<ColumnItems>>([]); 
 
   const rowKey = props.rowKey ? props.rowKey : 'id';
   const antIntl = antUseIntl();
   const componentsIntl = useComponentsIntl();
-  const extendActions: AutoTableActionType = {
-    startNewForm: (recordKey?: React.Key) => {
-      console.debug(' => startNewForm', recordKey);
-      if (props.newURL) {
-        // setEditFormVisible(false);
-        setEditFormVisible(true);
-        setEditFormState({
-          editMode: 'add',
-          saveURL: props.newURL,
-          httpMethod: props.newURLMethod ? props.newURLMethod : 'POST',
-        });
-        formRef.current?.resetFields();
-      } else {
-        message.error('newURL address were not configured');
-      }
-      return true;
-    },
-    cancelNewForm: async (
-      recordKey: React.Key,
-      needReTry?: boolean | undefined,
-    ) => {
-      console.debug(' => cancelNewForm', recordKey, needReTry);
-      setEditFormVisible(false);
-      return true;
-    },
-    startEditForm: (recordKey: React.Key, record: ColumnItems) => {
-      console.debug(' => startEditForm', recordKey, 'record:', record);
-      // setEditFormVisible(false);
-      if (props.saveURL) {
-        setEditFormVisible(true);
-        // console.debug(' --> startEditForm current formRef', formRef.current?.getFieldsValue());
-        setEditFormState({
-          editMode: 'update',
-          recordKey: recordKey,
-          saveURL: props.saveURL,
-          httpMethod: props.saveURLMethod ? props.saveURLMethod : 'POST',
-        });
-        formRef.current?.setFieldsValue(record);
-      } else {
-        message.error(
-          componentsIntl
-            .getMessage(
-              'prompts.propertyWereNotConfigured',
-              '${property} were not configured!',
-            )
-            .replace('${property}', 'saveURL'),
-        );
-      }
-      return true;
-    },
-    cancelEditForm: async (
-      recordKey: React.Key,
-      needReTry?: boolean | undefined,
-    ) => {
-      console.debug(' => cancelEditForm', recordKey, needReTry);
-      setEditFormVisible(false);
-      return true;
-    },
-    startViewModal: async (recordKey: React.Key, record: ColumnItems) => {
-      setViewModalVisible(true);
-      setViewModalItemData(record);
-      if (props.viewURL) {
-        const result = await doUrlQuery(
-          props.viewURL,
-          props.viewURLMethod,
-          record,
-          rowKey,
-        );
-        if (
-          result &&
-          result.success &&
-          result.data &&
-          result.data instanceof Map
-        ) {
-          setViewModalItemData(result.data);
-        }
-      }
-      return true;
-    },
-    cancelViewModal: (recordKey: React.Key) => {
-      if (false) {
-        console.debug(`view model close by row key:${recordKey}`);
-      }
-      setViewModalVisible(false);
-      return true;
-    },
-    startRelationModal: async (
-      recordKey: React.Key,
-      record: ColumnItems,
-      props?: OperationColumnType,
-    ) => {
-      setEditFormState({
-        editMode: 'relation',
-        recordKey: recordKey,
-        saveURL: props?.saveURL,
-        httpMethod: props?.httpMethod,
-      });
-      if (props) {
-        setRecordOperationProps(props);
-      }
-      setRelationModalVisible(true);
-      return true;
-    },
-    cancelRelationModal: (recordKey: React.Key) => {
-      console.debug('cancel relation modal by key:', recordKey);
-      setRelationModalVisible(false);
-      return true;
-    },
-  };
-
-  const autoTableOptions: AutoTableToolbarParamsOptionsType = {
-    rowKey,
-    actionRef,
-    formRef,
-    autoTableActions: extendActions,
-    antIntl,
-    componentsIntl,
-    setEditFormVisible,
-    setEditFormState,
-    setViewModalVisible,
-    setViewModalItemData,
-  };
   const intlInstances: IntlInstancesType = {
     antIntl,
     componentsIntl,
   };
-  const columns = formatColumns(
-    props.columns,
-    props,
-    extendActions,
-    intlInstances,
-  );
+  const getTableColumns = () => {
+    if (columns && columns.length > 0) {
+      return columns;
+    } else {
+      return formatColumns(
+        props.columns,
+        props,
+        getExtendActions(),
+        intlInstances,
+      );
+    }
+  };
+  const getExtendActions = () => {
+    const extendActions: AutoTableActionType = {
+      startNewForm: (recordKey?: React.Key) => {
+        console.debug(' => startNewForm', recordKey);
+        if (props.newURL) {
+          // setEditFormVisible(false);
+          setSchemaFormColumns(getTableColumns());
+          setEditFormVisible(true);
+          setEditFormState({
+            editMode: 'add',
+            saveURL: props.newURL,
+            httpMethod: props.newURLMethod ? props.newURLMethod : 'POST',
+          });
+          formRef.current?.resetFields();
+        } else {
+          message.error('newURL address were not configured');
+        }
+        return true;
+      },
+      cancelNewForm: async (
+        recordKey: React.Key,
+        needReTry?: boolean | undefined,
+      ) => {
+        console.debug(' => cancelNewForm', recordKey, needReTry);
+        setEditFormVisible(false);
+        return true;
+      },
+      startEditForm: (recordKey: React.Key, record: ColumnItems) => {
+        console.debug(' => startEditForm', recordKey, 'record:', record);
+        // setEditFormVisible(false);
+        if (props.saveURL) {
+          const tableColumns = getTableColumns();
+          console.debug('startEditForm set schema form columns', tableColumns);
+          if (tableColumns) {
+            setSchemaFormColumns(tableColumns);
+          }
+          setEditFormVisible(true);
+          // console.debug(' --> startEditForm current formRef', formRef.current?.getFieldsValue());
+          setEditFormState({
+            editMode: 'update',
+            recordKey: recordKey,
+            saveURL: props.saveURL,
+            httpMethod: props.saveURLMethod ? props.saveURLMethod : 'POST',
+          });
+          formRef.current?.setFieldsValue(record);
+        } else {
+          message.error(
+            componentsIntl
+              .getMessage(
+                'prompts.propertyWereNotConfigured',
+                '${property} were not configured!',
+              )
+              .replace('${property}', 'saveURL'),
+          );
+        }
+        return true;
+      },
+      cancelEditForm: async (
+        recordKey: React.Key,
+        needReTry?: boolean | undefined,
+      ) => {
+        console.debug(' => cancelEditForm', recordKey, needReTry);
+        setEditFormVisible(false);
+        return true;
+      },
+      startViewModal: async (recordKey: React.Key, record: ColumnItems) => {
+        setViewModalVisible(true);
+        setViewModalItemData(record);
+        if (props.viewURL) {
+          const result = await doUrlQuery(
+            props.viewURL,
+            props.viewURLMethod,
+            record,
+            rowKey,
+          );
+          if (
+            result &&
+            result.success &&
+            result.data &&
+            result.data instanceof Map
+          ) {
+            setViewModalItemData(result.data);
+          }
+        }
+        return true;
+      },
+      cancelViewModal: (recordKey: React.Key) => {
+        if (false) {
+          console.debug(`view model close by row key:${recordKey}`);
+        }
+        setViewModalVisible(false);
+        return true;
+      },
+      startRelationModal: async (
+        recordKey: React.Key,
+        record: ColumnItems,
+        props?: OperationColumnType,
+      ) => {
+        setEditFormState({
+          editMode: 'relation',
+          recordKey: recordKey,
+          saveURL: props?.saveURL,
+          httpMethod: props?.httpMethod,
+        });
+        if (props) {
+          setRecordOperationProps(props);
+        }
+        setRelationModalVisible(true);
+        return true;
+      },
+      cancelRelationModal: (recordKey: React.Key) => {
+        console.debug('cancel relation modal by key:', recordKey);
+        setRelationModalVisible(false);
+        return true;
+      },
+      startSchemaFormModal: async (
+        recordKey: React.Key,
+        record: ColumnItems,
+        props?: OperationColumnType,
+      ) => {
+        if (props?.schemaURL) {
+          const schemaData = await fetchSchemaData(props?.schemaURL);
+          if (schemaData.data) {
+            setSchemaFormColumns(formatColumns(schemaData.data.schema.columns));
+          }
+        }
+        setEditFormState({
+          editMode: 'schemaform',
+          recordKey: recordKey,
+          saveURL: props?.saveURL,
+          httpMethod: props?.httpMethod,
+        });
+        if (props) {
+          setRecordOperationProps(props);
+        }
+        setEditFormVisible(true);
+        return true;
+      },
+      cancelSchemaFormModal: (recordKey: React.Key) => {
+        console.debug('cancel schema form modal by key:', recordKey);
+        setEditFormVisible(false);
+        return true;
+      },
+    };
+    return extendActions;
+  };
+
+  const getAutoTableOptions = () => {
+    const autoTableOptions: AutoTableToolbarParamsOptionsType = {
+      rowKey,
+      actionRef,
+      formRef,
+      autoTableActions: getExtendActions(),
+      antIntl,
+      componentsIntl,
+      setEditFormVisible,
+      setEditFormState,
+      setViewModalVisible,
+      setViewModalItemData,
+    };
+    return autoTableOptions;
+  }
+  useEffect(() => {
+    console.debug('formatting column when init', props.columns);
+    const formattedColumns = formatColumns(
+      props.columns,
+      props,
+      getExtendActions(),
+      intlInstances,
+    );
+    setColumns(formattedColumns);
+    setEditFormVisible(true);
+    setSchemaFormColumns(formattedColumns);
+    setEditFormVisible(false);
+  }, [props.columns]);
 
   return (
     <>
@@ -258,10 +325,28 @@ const AutoTable = (props: AutoTableDescriptor) => {
         }
         dateFormatter="string"
         headerTitle={title}
-        toolBarRender={() => formatToolBar(props, autoTableOptions)}
+        toolBarRender={() => formatToolBar(props, getAutoTableOptions())}
       />
+      <Modal
+        open={viewModalVisible}
+        onCancel={() => {
+          setViewModalVisible(false);
+        }}
+        onOk={() => {
+          setViewModalVisible(false);
+        }}
+      >
+        <ProDescriptions
+          title={componentsIntl.getMessage('basic.view', 'View') + title}
+          // bordered={true}
+          dataSource={viewModalItemData}
+          columns={columns as ProDescriptionsItemProps<ColumnItems>[]}
+        ></ProDescriptions>
+      </Modal>
       <BetaSchemaForm<ColumnItems>
+        title={(editFormState.editMode=='add' ? componentsIntl.getMessage('basic.New', 'New') : componentsIntl.getMessage('basic.Edit', 'Edit')) + title}
         formRef={formRef}
+        // action={schemaFormActionRef}
         open={editFormVisible}
         onOpenChange={(visible) => {
           console.debug(
@@ -285,16 +370,23 @@ const AutoTable = (props: AutoTableDescriptor) => {
             }
           : {})}
         // steps={[{ title: 'ProComponent' }]}
-        rowProps={{
-          gutter: [16, 16],
+        width={props.modalWidth ? props.modalWidth : "80%"}
+        rowProps={props.rowProps ? props.rowProps : {
+          gutter: 16,
         }}
-        colProps={{
+        colProps={props.colProps ? props.colProps : {
           span: 12,
         }}
         grid={
           props.saveFormMode !== 'LightFilter' &&
           props.saveFormMode !== 'QueryFilter'
         }
+        onInit={(values, form) => {
+          console.debug('autotable schema form onInit with values:', values, 'form:', form.getFieldsValue());
+        }}
+        onLoadingChange={(loading) => {
+          console.debug('autotable schema form onLoadingChange:', loading);
+        }}
         onFinish={async (values) => {
           let saveURL = editFormState.saveURL;
           if (editFormState.editMode === 'update' && !values[rowKey]) {
@@ -314,26 +406,10 @@ const AutoTable = (props: AutoTableDescriptor) => {
           }
         }}
         columns={
-          (props.saveFormMode === 'StepsForm' ? [columns] : columns) as any
+          (props.saveFormMode === 'StepsForm' ? [schemaFormColumns] : schemaFormColumns) as any
         }
         // shouldUpdate={editFormVisible}
       />
-      <Modal
-        open={viewModalVisible}
-        onCancel={() => {
-          setViewModalVisible(false);
-        }}
-        onOk={() => {
-          setViewModalVisible(false);
-        }}
-      >
-        <ProDescriptions
-          title={componentsIntl.getMessage('basic.view', 'View') + title}
-          // bordered={true}
-          dataSource={viewModalItemData}
-          columns={columns as ProDescriptionsItemProps<ColumnItems>[]}
-        ></ProDescriptions>
-      </Modal>
       <RelationForm
         open={relationModalVisible}
         title={recordOperationProps.title}

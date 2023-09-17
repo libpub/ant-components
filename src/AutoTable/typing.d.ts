@@ -7,8 +7,11 @@ import type {
   ProFormLayoutType,
 } from '@ant-design/pro-components';
 import type { ProFieldEmptyText } from '@ant-design/pro-field';
+import type { ProFieldRequestData } from '@ant-design/pro-utils'
 import type { SizeType } from 'antd/es/config-provider/SizeContext';
+import type { ColProps, RowProps } from 'antd';
 import React from 'react';
+import { BuiltinPageSchemaType } from '../BuiltinPage';
 
 export type ColumnItems = Record<string, any>;
 
@@ -55,7 +58,8 @@ export declare type ColumnBuiltinOperationTypes =
   | 'update'
   | 'delete'
   | 'view'
-  | 'relation';
+  | 'relation'
+  | 'schemaform';
 
 export declare type RelationFormLayoutMode =
   | 'tree'
@@ -96,6 +100,7 @@ export declare type OperationColumnType = {
   primary?: boolean;
   searchURL?: string | TreeDataNode[];
   saveURL?: string;
+  schemaURL?: string | BuiltinPageSchemaType;
   selectedURL?: string | CommonArrayElementType[];
   modalLayoutMode?: RelationFormLayoutMode;
   keyFieldName?: string;
@@ -163,6 +168,36 @@ export type ColumnDescriptor = {
   /** @name 用户表单时的初始值 */
   initialValue?: React.ReactNode;
   formItemProps?: FormItemProps;
+  /** @name 从服务器请求枚举(URI) */
+  request?: string;
+  /** @name request防抖动时间 默认10 单位ms */
+  debounceTime?: number;
+  /** @name 从服务器请求的参数，改变了会触发 reload */
+  params?: Record<string, any>;
+  /** @name 依赖字段的name，暂时只在拥有 request 的项目中生效，会自动注入到 params 中 */
+  dependencies?: NamePath[];
+  showSearch?: boolean;
+  /** select type async options label field and value field */
+  asyncSelectOptionLabelField?: string;
+  asyncSelectOptionValueField?: string;
+  /** columns description for formList and formSet */
+  columns?: ColumnDescriptor[];
+  /** @name grid boolean */
+  grid?: boolean;
+  /**
+   * only works when grid is enabled
+   *
+   * When passing the `span` attribute, the default value is empty
+   * @default
+   * { xs: 24 }
+   */
+  colProps?: ColProps;
+  /**
+   * only works when grid is enabled
+   * @default
+   * { gutter: 8 }
+   */
+  rowProps?: RowProps;
 };
 
 export type AutoTableDescriptor = {
@@ -211,6 +246,21 @@ export type AutoTableDescriptor = {
   defaultSize?: SizeType;
   /** @name toolbar buttons */
   toolbar?: OperationColumnType[];
+  modalWidth?: string | number;
+  /**
+   * only works when grid is enabled
+   *
+   * When passing the `span` attribute, the default value is empty
+   * @default
+   * { xs: 24 }
+   */
+  colProps?: ColProps;
+  /**
+   * only works when grid is enabled
+   * @default
+   * { gutter: 8 }
+   */
+  rowProps?: RowProps;
 };
 
 export type ListQueryResult = {
@@ -265,10 +315,16 @@ export type AutoTableActionType = {
     props?: OperationColumnType,
   ) => Promise<boolean | undefined>;
   cancelRelationModal: (recordKey: React.Key) => boolean;
+  startSchemaFormModal: (
+    recordKey: React.Key,
+    record: ColumnItems,
+    props?: OperationColumnType,
+  ) => Promise<boolean | undefined>;
+  cancelSchemaFormModal: (recordKey: React.Key) => boolean;
 };
 
 export type AutoTableEditFormStateType = {
-  editMode: 'add' | 'update' | 'relation' | undefined;
+  editMode: 'add' | 'update' | 'relation' | 'schemaform' | undefined;
   recordKey?: React.Key;
   saveURL?: string;
   httpMethod?: string;

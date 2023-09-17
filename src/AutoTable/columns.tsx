@@ -6,6 +6,7 @@ import {
   ProFieldValueEnumType,
   ProFormColumnsType,
   ProSchemaValueEnumType,
+  RequestOptionsType,
   TableDropdown,
 } from '@ant-design/pro-components';
 import type { DropdownProps } from '@ant-design/pro-table/es/components/Dropdown';
@@ -25,6 +26,7 @@ import type {
   TagsOptionsType,
   ValueEnumType,
 } from './typing';
+import type { Rule } from 'antd/lib/form';
 
 const timestampToMoment = (ts: number, valueType?: string) => {
   let d = moment();
@@ -261,6 +263,13 @@ export const columnBuiltinOperationAction = async (
         operationProps,
       );
       break;
+    case 'schemaform':
+      autoTableActions?.startSchemaFormModal?.(
+        record[rowKey],
+        record,
+        operationProps,
+      );
+      break;
   }
 };
 
@@ -437,6 +446,23 @@ const formatColumnOperationsButtons = (
   };
 };
 
+const convertRulesFromJson = (jsonRules: Rule[]): Rule[] => {
+  const rules: Rule[] = jsonRules.map((rule: {[key: string]: any}) => {
+    if (rule.required && (typeof rule.required !== 'boolean' && 'depends' in rule.required)) {
+      return {
+        required: (getFieldValue: CallableFunction) => {
+          const fieldValue = getFieldValue(rule.required.depends[0].field);
+          return fieldValue === rule.required.depends[0].value;
+        },
+        message: rule.required.message,
+      };
+    }
+    return rule;
+  });
+
+  return rules;
+}
+
 const formatColumn = (
   element: ColumnDescriptor,
   props?: AutoTableDescriptor,
@@ -471,6 +497,40 @@ const formatColumn = (
   if (element.filters) {
     column.filters = element.filters;
   }
+  if (element.formItemProps && element.formItemProps.rules) {
+    element.formItemProps.rules = convertRulesFromJson(element.formItemProps.rules);
+    // console.debug('field:', element.name, 'formItemProps:', element.formItemProps);
+  }
+  if (element.request) {
+    const url = element.request;
+    if (element.showSearch) {
+      column.showSearch = true;
+    }
+    column.request = async () => {
+      // const params = {};
+      const resp = await doUrlQuery(url, 'GET', {})
+      if (resp && resp.data) {
+        const optionsArray: RequestOptionsType[] = [];
+        resp.data.forEach((ele: Record<string, any>) => {
+          optionsArray.push({
+            label: ele[element.asyncSelectOptionLabelField?element.asyncSelectOptionLabelField:'name'],
+            value: ele[element.asyncSelectOptionValueField?element.asyncSelectOptionValueField:'id']
+          });
+        })
+        return optionsArray;
+      }
+      return [];
+    };
+  }
+  if (element.debounceTime) {
+    column.debounceTime = element.debounceTime;
+  }
+  if (element.params) {
+    column.params = element.params;
+  }
+  if (element.dependencies) {
+    column.dependencies = element.dependencies;
+  }
   formatColumnValueType(column, element);
   if (element.valueEnum) {
     formatColumnValueEnum(column, element.valueEnum);
@@ -488,6 +548,12 @@ const formatColumn = (
       intlInstances,
     );
   }
+  if (element.columns) {
+    column.columns = formatColumns(element.columns, props, autoTableActions, intlInstances);
+  }
+  if (element.grid !== undefined) column.grid = element.grid;
+  if (element.rowProps) column.rowProps = element.rowProps;
+  if (element.colProps) column.colProps = element.colProps;
   return column;
 };
 
